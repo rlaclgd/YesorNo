@@ -100,14 +100,14 @@
     </div>
   </div>
 
-  <script>
+<script>
   const stage = document.getElementById("stage");
   const yesBtn = document.getElementById("yes");
   const noBtn  = document.getElementById("no");
 
-  const SAFE_DISTANCE = 30;   // 마우스랑 최소 거리 (붙는 거 방지)
-  const STEP_MIN = 40;        // 한 번에 최소 이동 거리
-  const STEP_MAX = 120;       // 한 번에 최대 이동 거리
+  const SAFE_DISTANCE = 80;   // 손가락/마우스랑 최소 거리 (중요!!)
+  const STEP_MIN = 40;
+  const STEP_MAX = 140;
   const PADDING = 10;
 
   function clamp(v, min, max) {
@@ -126,19 +126,17 @@
 
     const dx = noCx - cursorX;
     const dy = noCy - cursorY;
-    const distance = Math.hypot(dx, dy);
+    const dist = Math.hypot(dx, dy);
 
-    // 너무 가까워졌을 때만 도망
-    if (distance > SAFE_DISTANCE) return;
+    // 가까워지기 전에 미리 도망
+    if (dist > SAFE_DISTANCE) return;
 
-    // 현재 위치 기준으로 방향 계산
     const angle = Math.atan2(dy, dx);
     const step = STEP_MIN + Math.random() * (STEP_MAX - STEP_MIN);
 
     let nextCx = noCx + Math.cos(angle) * step;
     let nextCy = noCy + Math.sin(angle) * step;
 
-    // stage 안으로 제한
     const left = clamp(
       nextCx - noRect.width / 2 - stageRect.left,
       PADDING,
@@ -156,13 +154,25 @@
     noBtn.style.transition = "left 0.12s ease, top 0.12s ease";
   }
 
+  // 🔥 절대 안 눌리게 하는 핵심 이벤트들
+  function escapeNow(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const evt = e.touches?.[0] || e;
+    moveNoButtonFromCursor(evt);
+  }
+
   stage.addEventListener("mousemove", moveNoButtonFromCursor);
   stage.addEventListener("touchmove", (e) => {
     moveNoButtonFromCursor(e.touches[0]);
   }, { passive: true });
 
+  noBtn.addEventListener("pointerdown", escapeNow, { passive: false });
+  noBtn.addEventListener("pointerenter", escapeNow);
+  noBtn.addEventListener("click", escapeNow);
+
   yesBtn.addEventListener("click", () => {
-    alert("꺄아 최고 💕");
+    alert("꺄아 💕 결국 예 눌렀다 😏");
   });
 
   // 💗 하트 눈
@@ -180,6 +190,7 @@
     setTimeout(() => h.remove(), 9000);
   }, 240);
 </script>
+
 
 </body>
 </html>
