@@ -2,74 +2,179 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <title>나랑 골프치러 갈래?</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>나랑 할래?</title>
   <style>
+    :root{
+      --bg: #fff0f6;
+      --yes: #ff5c8a;
+      --no: #d9d9d9;
+      --text: #222;
+    }
+
     body {
       height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: #fff0f6;
-      font-family: 'Arial', sans-serif;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      background: var(--bg);
+      font-family: Arial, sans-serif;
       overflow: hidden;
+      color: var(--text);
     }
 
     .container {
       text-align: center;
+      position: relative;
+      width: min(520px, 92vw);
+      padding: 24px 16px 90px;
     }
 
     h1 {
-      margin-bottom: 40px;
-      font-size: 32px;
+      margin: 0 0 26px;
+      font-size: clamp(24px, 4.5vw, 34px);
+    }
+
+    /* 버튼들을 담는 무대(여기 안에서만 도망가게 할 거야) */
+    .stage{
+      position: relative;
+      height: 140px;
+      width: 100%;
     }
 
     button {
       font-size: 20px;
-      padding: 12px 28px;
-      border-radius: 30px;
+      padding: 12px 26px;
+      border-radius: 999px;
       border: none;
       cursor: pointer;
       position: absolute;
-      transition: all 0.2s ease;
+      transition: transform 0.18s ease;
+      user-select: none;
+      touch-action: manipulation;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.08);
     }
 
     #yes {
-      background: #ff5c8a;
+      background: var(--yes);
       color: white;
-      left: 45%;
+      left: 42%;
+      top: 60px;
+      transform: translateX(-50%);
     }
 
     #no {
-      background: #ccc;
+      background: var(--no);
       color: #333;
-      left: 55%;
+      left: 58%;
+      top: 60px;
+      transform: translateX(-50%);
+    }
+
+    /* 하트 눈 */
+    .heart {
+      position: fixed;
+      top: -20px;
+      font-size: 12px;          /* 쪼마난 하트 */
+      opacity: 0.85;
+      pointer-events: none;
+      animation: fall linear forwards;
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,0.08));
+    }
+
+    @keyframes fall {
+      to {
+        transform: translate3d(var(--drift), 110vh, 0) rotate(var(--rot));
+        opacity: 0.05;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>나랑 🩷 골프치러 갈래?</h1>
-    <button id="yes">예</button>
-    <button id="no">아니오</button>
+
+    <div class="stage" id="stage">
+      <button id="yes">예</button>
+      <button id="no">아니오</button>
+    </div>
   </div>
 
   <script>
-    const noBtn = document.getElementById("no");
+    const stage = document.getElementById("stage");
+    const yesBtn = document.getElementById("yes");
+    const noBtn  = document.getElementById("no");
 
-    noBtn.addEventListener("mouseover", moveButton);
-    noBtn.addEventListener("touchstart", moveButton);
+    // ✅ "너무 멀리" 해결 포인트:
+    // - stage(무대) 안에서만 움직이게
+    // - yes 버튼 주변 "가까운 반경" 안에서만 이동
+    const RADIUS = 90;     // 도망 반경(작을수록 가까이만 이동)
+    const PADDING = 10;    // 벽에 너무 붙지 않게
 
-    function moveButton() {
-      const x = Math.random() * (window.innerWidth - 120);
-      const y = Math.random() * (window.innerHeight - 60);
+    function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
 
-      noBtn.style.left = `${x}px`;
-      noBtn.style.top = `${y}px`;
+    function moveNoButton() {
+      const stageRect = stage.getBoundingClientRect();
+      const yesRect = yesBtn.getBoundingClientRect();
+
+      // yes 버튼 중심(무대 좌표로 변환)
+      const yesCx = (yesRect.left + yesRect.width/2) - stageRect.left;
+      const yesCy = (yesRect.top  + yesRect.height/2) - stageRect.top;
+
+      // 랜덤 각도 + 랜덤 거리(반경 내)
+      const angle = Math.random() * Math.PI * 2;
+      const dist  = 35 + Math.random() * (RADIUS - 35); // 너무 미세한 이동은 방지(35px~RADIUS)
+
+      const nx = yesCx + Math.cos(angle) * dist;
+      const ny = yesCy + Math.sin(angle) * dist;
+
+      // 버튼 좌상단으로 보정(가운데 기준 -> left/top)
+      const left = clamp(nx - noBtn.offsetWidth/2,  PADDING, stageRect.width  - noBtn.offsetWidth  - PADDING);
+      const top  = clamp(ny - noBtn.offsetHeight/2, PADDING, stageRect.height - noBtn.offsetHeight - PADDING);
+
+      noBtn.style.left = left + "px";
+      noBtn.style.top  = top  + "px";
+      noBtn.style.transform = "translateX(0)"; // stage 안에서 픽셀로 움직이니 translate 제거
+      noBtn.style.transition = "left 0.14s ease, top 0.14s ease";
     }
 
-    document.getElementById("yes").addEventListener("click", () => {
-      alert("꺄아 최고>_< 💕🥰");
+    // 마우스/터치 접근 시 도망
+    noBtn.addEventListener("mouseover", moveNoButton);
+    noBtn.addEventListener("touchstart", (e) => { e.preventDefault(); moveNoButton(); }, {passive:false});
+
+    // 예 버튼 클릭
+    yesBtn.addEventListener("click", () => {
+      alert("꺄아 💕 최고>_< 🥰");
     });
+
+    // --------------------------
+    // 💗 하트 눈(쪼마난 하트) 만들기
+    // --------------------------
+    const HEARTS = ["💗","💖","💕","💘","💓"];
+    const HEART_RATE_MS = 220; // 하트 생성 빈도(작을수록 많이 내림)
+
+    function spawnHeart(){
+      const heart = document.createElement("div");
+      heart.className = "heart";
+      heart.textContent = HEARTS[Math.floor(Math.random() * HEARTS.length)];
+
+      const startX = Math.random() * window.innerWidth;
+      const size = 10 + Math.random() * 8; // 더 쪼마난 느낌 (10~18px)
+      const duration = 4.5 + Math.random() * 3.5; // 4.5~8초
+      const drift = (Math.random() * 80 - 40) + "px";
+      const rot = (Math.random() * 240 - 120) + "deg";
+
+      heart.style.left = startX + "px";
+      heart.style.fontSize = size + "px";
+      heart.style.animationDuration = duration + "s";
+      heart.style.setProperty("--drift", drift);
+      heart.style.setProperty("--rot", rot);
+
+      document.body.appendChild(heart);
+      setTimeout(() => heart.remove(), (duration * 1000) + 200);
+    }
+
+    setInterval(spawnHeart, HEART_RATE_MS);
   </script>
 </body>
 </html>
