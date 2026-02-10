@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>나랑 골프치러 갈래?</title>
+  <style>
+    body {
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #fff0f6;
+      font-family: 'Arial', sans-serif;
+      overflow: hidden;
+    }
+
+    .container {
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 40px;
+      font-size: 32px;
+    }
+
+    button {
+      font-size: 20px;
+      padding: 12px 28px;
+      border-radius: 30px;
+      border: none;
+      cursor: pointer;
+      position: absolute;
+      transition: all 0.2s ease;
+    }
+
+    #yes {
+      background: #ff5c8a;
+      color: white;
+      left: 45%;
+    }
+
+    #no {
+      background: #ccc;
+      color: #333;
+      left: 55%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>나랑 🩷 골프치러 갈래?</h1>
+    <button id="yes">예</button>
+    <button id="no">아니오</button>
+  </div>
+
+  <script>
+    const noBtn = document.getElementById("no");
+
+    noBtn.addEventListener("mouseover", moveButton);
+    noBtn.addEventListener("touchstart", moveButton);
+
+    function moveButton() {
+      const x = Math.random() * (window.innerWidth - 120);
+      const y = Math.random() * (window.innerHeight - 60);
+
+      noBtn.style.left = `${x}px`;
+      noBtn.style.top = `${y}px`;
+    }
+
+    document.getElementById("yes").addEventListener("click", () => {
+      alert("꺄아 최고>_< 💕🥰");
+    });
+  </script>
+</body>
+</html>
