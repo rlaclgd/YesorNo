@@ -88,6 +88,30 @@
         opacity: 0.05;
       }
     }
+
+        #yes { transition: all 0.2s ease; }
+
+#yes.heart-mode{
+  width: 70px;
+  height: 70px;
+  padding: 0;
+  border-radius: 0;
+  transform: translateX(-50%) rotate(-45deg);
+  position: absolute;
+}
+
+#yes.heart-mode::before,
+#yes.heart-mode::after{
+  content: "";
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  background: var(--yes);
+  border-radius: 50%;
+}
+
+#yes.heart-mode::before{ top: -35px; left: 0; }
+#yes.heart-mode::after { top: 0; left: 35px; }
   </style>
 </head>
 <body>
@@ -223,30 +247,6 @@
 
   // 시작!
   requestAnimationFrame(tick);
-
-    #yes { transition: all 0.2s ease; }
-
-#yes.heart-mode{
-  width: 70px;
-  height: 70px;
-  padding: 0;
-  border-radius: 0;
-  transform: translateX(-50%) rotate(-45deg);
-  position: absolute;
-}
-
-#yes.heart-mode::before,
-#yes.heart-mode::after{
-  content: "";
-  position: absolute;
-  width: 70px;
-  height: 70px;
-  background: var(--yes);
-  border-radius: 50%;
-}
-
-#yes.heart-mode::before{ top: -35px; left: 0; }
-#yes.heart-mode::after { top: 0; left: 35px; }
 
 </script>
 
