@@ -105,23 +105,42 @@
   const yesBtn = document.getElementById("yes");
   const noBtn  = document.getElementById("no");
 
-  // 🔥 손가락은 커서보다 크니까 거리 넉넉하게!
-  const SAFE_DISTANCE = 140;   // ← 여기 올릴수록 더 안 눌림 (추천 120~180)
+  const SAFE_DISTANCE = 120;   // 절대 접근 불가 거리
   const PADDING = 10;
 
-  // 한 번에 "조금씩" 도망 (근데 가까우면 더 크게 도망)
-  const STEP_MIN = 35;
-  const STEP_MAX = 180;
+  // 💖 예 버튼: 가까우면 하트로 변신, 멀어지면 원래대로
+const YES_TEXT = "예";
+const YES_HEART = "💗";
+const YES_DISTANCE = 120; // 가까워지는 기준 거리(원하면 80~150 조절)
 
-  // 혹시라도 클릭 성공을 원천봉쇄
-  noBtn.disabled = true;              // ✅ 눌려도 click 안됨
-  noBtn.style.cursor = "not-allowed"; // (선택)
+function setYesHeart(on){
+  yesBtn.textContent = on ? YES_HEART : YES_TEXT;
+}
+
+function updateYesByPointer(clientX, clientY){
+  const r = yesBtn.getBoundingClientRect();
+  const cx = r.left + r.width/2;
+  const cy = r.top + r.height/2;
+  const d = Math.hypot(cx - clientX, cy - clientY);
+  setYesHeart(d < YES_DISTANCE);
+}
+
+// 마우스/터치 모두 대응
+document.addEventListener("pointermove", (e) => {
+  updateYesByPointer(e.clientX, e.clientY);
+}, { passive: true });
+
+// 화면 밖으로 나가면 원상복구
+document.addEventListener("pointerleave", () => setYesHeart(false));
+
+  // 클릭 원천 차단
+  noBtn.disabled = true;
 
   function clamp(v, min, max) {
     return Math.max(min, Math.min(max, v));
   }
 
-  function escapeFromPoint(clientX, clientY) {
+  function repelFrom(clientX, clientY) {
     const stageRect = stage.getBoundingClientRect();
     const noRect = noBtn.getBoundingClientRect();
 
@@ -132,52 +151,49 @@
     const dy = noCy - clientY;
     const dist = Math.hypot(dx, dy);
 
-    // 충분히 멀면 가만히
-    if (dist > SAFE_DISTANCE) return;
+    // 이미 충분히 멀면 가만히
+    if (dist >= SAFE_DISTANCE) return;
 
-    // 가까울수록 더 크게 도망 (손가락이 닿기 전에 확 튐)
-    const t = 1 - (dist / SAFE_DISTANCE); // 0~1
-    const step = STEP_MIN + t * (STEP_MAX - STEP_MIN);
-
+    // 👉 핵심: SAFE_DISTANCE 경계로 "강제 밀어내기"
+    const push = SAFE_DISTANCE - dist + 6; // 살짝 여유(+6)
     const angle = Math.atan2(dy, dx);
-    const nextCx = noCx + Math.cos(angle) * step;
-    const nextCy = noCy + Math.sin(angle) * step;
+
+    const targetCx = noCx + Math.cos(angle) * push;
+    const targetCy = noCy + Math.sin(angle) * push;
 
     const left = clamp(
-      nextCx - noRect.width / 2 - stageRect.left,
+      targetCx - noRect.width / 2 - stageRect.left,
       PADDING,
       stageRect.width - noRect.width - PADDING
     );
 
     const top = clamp(
-      nextCy - noRect.height / 2 - stageRect.top,
+      targetCy - noRect.height / 2 - stageRect.top,
       PADDING,
       stageRect.height - noRect.height - PADDING
     );
 
     noBtn.style.left = left + "px";
     noBtn.style.top  = top  + "px";
-    noBtn.style.transition = "left 0.08s ease, top 0.08s ease";
+    noBtn.style.transition = "left 0.06s linear, top 0.06s linear";
   }
 
-  // ✅ 핵심: stage 위에서가 아니라 "문서 전체"에서 포인터 움직임 추적
+  // ⭐ 문서 전체에서 지속적으로 반발
   document.addEventListener("pointermove", (e) => {
-    escapeFromPoint(e.clientX, e.clientY);
+    repelFrom(e.clientX, e.clientY);
   }, { passive: true });
 
-  // 모바일에서 탭 순간(눌리기 시작)에도 먼저 도망
+  // 모바일 탭 시작 순간도 차단
   document.addEventListener("pointerdown", (e) => {
-    // 아니오를 누르려는 순간이면 즉시 도망 + 이벤트 차단
     if (e.target === noBtn) {
       e.preventDefault();
       e.stopPropagation();
     }
-    escapeFromPoint(e.clientX, e.clientY);
+    repelFrom(e.clientX, e.clientY);
   }, { capture: true, passive: false });
 
-  // 예 버튼
   yesBtn.addEventListener("click", () => {
-    alert("꺄아 💕 결국 예 눌렀다 😏");
+    alert("꺄아 💕 사실 선택지는 하나뿐 😏");
   });
 
   // 💗 하트 눈
@@ -195,6 +211,7 @@
     setTimeout(() => h.remove(), 9000);
   }, 240);
 </script>
+
 
 
 </body>
