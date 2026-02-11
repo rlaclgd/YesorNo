@@ -105,112 +105,96 @@
   const yesBtn = document.getElementById("yes");
   const noBtn  = document.getElementById("no");
 
-  const SAFE_DISTANCE = 120;   // 절대 접근 불가 거리
+  const SAFE_DISTANCE = 150;   // 이 안으로 절대 못 들어옴
   const PADDING = 10;
 
-  // 💖 예 버튼: 가까우면 하트로 변신, 멀어지면 원래대로
-const YES_TEXT = "예";
-const YES_HEART = "💗";
-const YES_DISTANCE = 120; // 가까워지는 기준 거리(원하면 80~150 조절)
-
-function setYesHeart(on){
-  yesBtn.textContent = on ? YES_HEART : YES_TEXT;
-}
-
-function updateYesByPointer(clientX, clientY){
-  const r = yesBtn.getBoundingClientRect();
-  const cx = r.left + r.width/2;
-  const cy = r.top + r.height/2;
-  const d = Math.hypot(cx - clientX, cy - clientY);
-  setYesHeart(d < YES_DISTANCE);
-}
-
-// 마우스/터치 모두 대응
-document.addEventListener("pointermove", (e) => {
-  updateYesByPointer(e.clientX, e.clientY);
-}, { passive: true });
-
-// 화면 밖으로 나가면 원상복구
-document.addEventListener("pointerleave", () => setYesHeart(false));
-
-  // 클릭 원천 차단
-  noBtn.disabled = true;
+  // 👿 클릭 완전 차단
+  noBtn.style.pointerEvents = "none";
 
   function clamp(v, min, max) {
     return Math.max(min, Math.min(max, v));
   }
 
-  function repelFrom(clientX, clientY) {
+  function repel(clientX, clientY) {
     const stageRect = stage.getBoundingClientRect();
     const noRect = noBtn.getBoundingClientRect();
 
-    const noCx = noRect.left + noRect.width / 2;
-    const noCy = noRect.top  + noRect.height / 2;
+    const cx = noRect.left + noRect.width/2;
+    const cy = noRect.top  + noRect.height/2;
 
-    const dx = noCx - clientX;
-    const dy = noCy - clientY;
+    const dx = cx - clientX;
+    const dy = cy - clientY;
     const dist = Math.hypot(dx, dy);
 
-    // 이미 충분히 멀면 가만히
     if (dist >= SAFE_DISTANCE) return;
 
-    // 👉 핵심: SAFE_DISTANCE 경계로 "강제 밀어내기"
-    const push = SAFE_DISTANCE - dist + 6; // 살짝 여유(+6)
+    const push = SAFE_DISTANCE - dist + 20;
     const angle = Math.atan2(dy, dx);
 
-    const targetCx = noCx + Math.cos(angle) * push;
-    const targetCy = noCy + Math.sin(angle) * push;
+    const nx = cx + Math.cos(angle) * push;
+    const ny = cy + Math.sin(angle) * push;
 
     const left = clamp(
-      targetCx - noRect.width / 2 - stageRect.left,
+      nx - noRect.width/2 - stageRect.left,
       PADDING,
       stageRect.width - noRect.width - PADDING
     );
 
     const top = clamp(
-      targetCy - noRect.height / 2 - stageRect.top,
+      ny - noRect.height/2 - stageRect.top,
       PADDING,
       stageRect.height - noRect.height - PADDING
     );
 
     noBtn.style.left = left + "px";
     noBtn.style.top  = top  + "px";
-    noBtn.style.transition = "left 0.06s linear, top 0.06s linear";
   }
 
-  // ⭐ 문서 전체에서 지속적으로 반발
   document.addEventListener("pointermove", (e) => {
-    repelFrom(e.clientX, e.clientY);
+    repel(e.clientX, e.clientY);
+    updateYesShape(e.clientX, e.clientY);
   }, { passive: true });
 
-  // 모바일 탭 시작 순간도 차단
-  document.addEventListener("pointerdown", (e) => {
-    if (e.target === noBtn) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    repelFrom(e.clientX, e.clientY);
-  }, { capture: true, passive: false });
-
+  // 💖 예 버튼 클릭
   yesBtn.addEventListener("click", () => {
-    alert("꺄아 💕 사실 선택지는 하나뿐 😏");
+    alert("꺄아 💕 선택은 이미 정해져 있었어 😏");
   });
+
+  /* ===========================
+     💗 예 버튼이 하트 모양으로 변신
+     =========================== */
+
+  const YES_DISTANCE = 130;
+
+  function updateYesShape(px, py) {
+    const r = yesBtn.getBoundingClientRect();
+    const cx = r.left + r.width/2;
+    const cy = r.top + r.height/2;
+    const d = Math.hypot(cx - px, cy - py);
+
+    if (d < YES_DISTANCE) {
+      yesBtn.classList.add("heart-mode");
+    } else {
+      yesBtn.classList.remove("heart-mode");
+    }
+  }
 
   // 💗 하트 눈
   const HEARTS = ["💗","💖","💕","💓"];
   setInterval(() => {
     const h = document.createElement("div");
     h.className = "heart";
-    h.textContent = HEARTS[Math.floor(Math.random() * HEARTS.length)];
-    h.style.left = Math.random() * window.innerWidth + "px";
-    h.style.fontSize = 10 + Math.random() * 8 + "px";
-    h.style.animationDuration = 5 + Math.random() * 3 + "s";
-    h.style.setProperty("--drift", (Math.random()*80 - 40) + "px");
-    h.style.setProperty("--rot", (Math.random()*200 - 100) + "deg");
+    h.textContent = HEARTS[Math.floor(Math.random()*HEARTS.length)];
+    h.style.left = Math.random()*window.innerWidth + "px";
+    h.style.fontSize = 10 + Math.random()*8 + "px";
+    h.style.animationDuration = 5 + Math.random()*3 + "s";
+    h.style.setProperty("--drift", (Math.random()*80-40)+"px");
+    h.style.setProperty("--rot", (Math.random()*200-100)+"deg");
     document.body.appendChild(h);
-    setTimeout(() => h.remove(), 9000);
-  }, 240);
+    setTimeout(()=>h.remove(),9000);
+  },240);
 </script>
+
 
 
 
