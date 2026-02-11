@@ -105,37 +105,43 @@
   const yesBtn = document.getElementById("yes");
   const noBtn  = document.getElementById("no");
 
-  const SAFE_DISTANCE = 80;   // 손가락/마우스랑 최소 거리 (중요!!)
-  const STEP_MIN = 40;
-  const STEP_MAX = 140;
+  // 🔥 손가락은 커서보다 크니까 거리 넉넉하게!
+  const SAFE_DISTANCE = 140;   // ← 여기 올릴수록 더 안 눌림 (추천 120~180)
   const PADDING = 10;
+
+  // 한 번에 "조금씩" 도망 (근데 가까우면 더 크게 도망)
+  const STEP_MIN = 35;
+  const STEP_MAX = 180;
+
+  // 혹시라도 클릭 성공을 원천봉쇄
+  noBtn.disabled = true;              // ✅ 눌려도 click 안됨
+  noBtn.style.cursor = "not-allowed"; // (선택)
 
   function clamp(v, min, max) {
     return Math.max(min, Math.min(max, v));
   }
 
-  function moveNoButtonFromCursor(e) {
+  function escapeFromPoint(clientX, clientY) {
     const stageRect = stage.getBoundingClientRect();
     const noRect = noBtn.getBoundingClientRect();
-
-    const cursorX = e.clientX;
-    const cursorY = e.clientY;
 
     const noCx = noRect.left + noRect.width / 2;
     const noCy = noRect.top  + noRect.height / 2;
 
-    const dx = noCx - cursorX;
-    const dy = noCy - cursorY;
+    const dx = noCx - clientX;
+    const dy = noCy - clientY;
     const dist = Math.hypot(dx, dy);
 
-    // 가까워지기 전에 미리 도망
+    // 충분히 멀면 가만히
     if (dist > SAFE_DISTANCE) return;
 
-    const angle = Math.atan2(dy, dx);
-    const step = STEP_MIN + Math.random() * (STEP_MAX - STEP_MIN);
+    // 가까울수록 더 크게 도망 (손가락이 닿기 전에 확 튐)
+    const t = 1 - (dist / SAFE_DISTANCE); // 0~1
+    const step = STEP_MIN + t * (STEP_MAX - STEP_MIN);
 
-    let nextCx = noCx + Math.cos(angle) * step;
-    let nextCy = noCy + Math.sin(angle) * step;
+    const angle = Math.atan2(dy, dx);
+    const nextCx = noCx + Math.cos(angle) * step;
+    const nextCy = noCy + Math.sin(angle) * step;
 
     const left = clamp(
       nextCx - noRect.width / 2 - stageRect.left,
@@ -151,26 +157,25 @@
 
     noBtn.style.left = left + "px";
     noBtn.style.top  = top  + "px";
-    noBtn.style.transition = "left 0.12s ease, top 0.12s ease";
+    noBtn.style.transition = "left 0.08s ease, top 0.08s ease";
   }
 
-  // 🔥 절대 안 눌리게 하는 핵심 이벤트들
-  function escapeNow(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    const evt = e.touches?.[0] || e;
-    moveNoButtonFromCursor(evt);
-  }
-
-  stage.addEventListener("mousemove", moveNoButtonFromCursor);
-  stage.addEventListener("touchmove", (e) => {
-    moveNoButtonFromCursor(e.touches[0]);
+  // ✅ 핵심: stage 위에서가 아니라 "문서 전체"에서 포인터 움직임 추적
+  document.addEventListener("pointermove", (e) => {
+    escapeFromPoint(e.clientX, e.clientY);
   }, { passive: true });
 
-  noBtn.addEventListener("pointerdown", escapeNow, { passive: false });
-  noBtn.addEventListener("pointerenter", escapeNow);
-  noBtn.addEventListener("click", escapeNow);
+  // 모바일에서 탭 순간(눌리기 시작)에도 먼저 도망
+  document.addEventListener("pointerdown", (e) => {
+    // 아니오를 누르려는 순간이면 즉시 도망 + 이벤트 차단
+    if (e.target === noBtn) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    escapeFromPoint(e.clientX, e.clientY);
+  }, { capture: true, passive: false });
 
+  // 예 버튼
   yesBtn.addEventListener("click", () => {
     alert("꺄아 💕 결국 예 눌렀다 😏");
   });
