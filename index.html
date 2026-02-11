@@ -206,7 +206,25 @@
     alert("꺄아>_< 최고! 💕");
   });
 
-  #yes { transition: all 0.2s ease; }
+  // 하트 눈 유지
+  const HEARTS = ["💗","💖","💕","💓"];
+  setInterval(() => {
+    const h = document.createElement("div");
+    h.className = "heart";
+    h.textContent = HEARTS[Math.floor(Math.random() * HEARTS.length)];
+    h.style.left = Math.random() * window.innerWidth + "px";
+    h.style.fontSize = 10 + Math.random() * 8 + "px";
+    h.style.animationDuration = 5 + Math.random() * 3 + "s";
+    h.style.setProperty("--drift", (Math.random() * 80 - 40) + "px");
+    h.style.setProperty("--rot", (Math.random() * 200 - 100) + "deg");
+    document.body.appendChild(h);
+    setTimeout(() => h.remove(), 9000);
+  }, 240);
+
+  // 시작!
+  requestAnimationFrame(tick);
+
+    #yes { transition: all 0.2s ease; }
 
 #yes.heart-mode{
   width: 70px;
@@ -230,24 +248,6 @@
 #yes.heart-mode::before{ top: -35px; left: 0; }
 #yes.heart-mode::after { top: 0; left: 35px; }
 
-
-  // 하트 눈 유지
-  const HEARTS = ["💗","💖","💕","💓"];
-  setInterval(() => {
-    const h = document.createElement("div");
-    h.className = "heart";
-    h.textContent = HEARTS[Math.floor(Math.random() * HEARTS.length)];
-    h.style.left = Math.random() * window.innerWidth + "px";
-    h.style.fontSize = 10 + Math.random() * 8 + "px";
-    h.style.animationDuration = 5 + Math.random() * 3 + "s";
-    h.style.setProperty("--drift", (Math.random() * 80 - 40) + "px");
-    h.style.setProperty("--rot", (Math.random() * 200 - 100) + "deg");
-    document.body.appendChild(h);
-    setTimeout(() => h.remove(), 9000);
-  }, 240);
-
-  // 시작!
-  requestAnimationFrame(tick);
 </script>
 
 
