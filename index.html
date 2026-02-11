@@ -105,95 +105,151 @@
   const yesBtn = document.getElementById("yes");
   const noBtn  = document.getElementById("no");
 
-  const SAFE_DISTANCE = 150;   // 이 안으로 절대 못 들어옴
+  // 👿 절대 접근 금지 거리 (모바일이면 170~220 추천)
+  const SAFE_DISTANCE = 200;
   const PADDING = 10;
 
-  // 👿 클릭 완전 차단
+  // 예 버튼 하트 변신 거리
+  const YES_DISTANCE = 130;
+
+  // 👿 아니오 버튼: "눌림" 자체 원천 차단
   noBtn.style.pointerEvents = "none";
+
+  // 마지막 포인터 좌표(마우스/손가락)
+  let pointerX = window.innerWidth / 2;
+  let pointerY = window.innerHeight / 2;
+  let hasPointer = false;
 
   function clamp(v, min, max) {
     return Math.max(min, Math.min(max, v));
   }
 
-  function repel(clientX, clientY) {
+  function setPointerFromEvent(e) {
+    const t = e.touches?.[0] || e;
+    if (!t) return;
+    pointerX = t.clientX;
+    pointerY = t.clientY;
+    hasPointer = true;
+  }
+
+  // 포인터 좌표를 최대한 많이 잡아두기 (모바일/PC 모두)
+  document.addEventListener("pointermove", setPointerFromEvent, { passive: true });
+  document.addEventListener("mousemove", setPointerFromEvent, { passive: true });
+  document.addEventListener("touchmove", setPointerFromEvent, { passive: true });
+
+  document.addEventListener("pointerdown", setPointerFromEvent, { passive: true });
+  document.addEventListener("touchstart", setPointerFromEvent, { passive: true });
+
+  // ✅ 핵심: 매 프레임(60fps)마다 "항상" 밀어내기
+  function tick() {
+    if (hasPointer) {
+      repelNoFromPointer();
+      updateYesShape(pointerX, pointerY);
+    }
+    requestAnimationFrame(tick);
+  }
+
+  function repelNoFromPointer() {
     const stageRect = stage.getBoundingClientRect();
     const noRect = noBtn.getBoundingClientRect();
 
-    const cx = noRect.left + noRect.width/2;
-    const cy = noRect.top  + noRect.height/2;
+    const noCx = noRect.left + noRect.width / 2;
+    const noCy = noRect.top  + noRect.height / 2;
 
-    const dx = cx - clientX;
-    const dy = cy - clientY;
+    const dx = noCx - pointerX;
+    const dy = noCy - pointerY;
     const dist = Math.hypot(dx, dy);
 
+    // 안전거리 밖이면 그대로
     if (dist >= SAFE_DISTANCE) return;
 
-    const push = SAFE_DISTANCE - dist + 20;
-    const angle = Math.atan2(dy, dx);
+    // dist가 0에 가까울 수 있으니 분모 보호
+    const safeDist = Math.max(dist, 0.0001);
 
-    const nx = cx + Math.cos(angle) * push;
-    const ny = cy + Math.sin(angle) * push;
+    // ✅ "경계 밖"으로 강제 이동: 목표 거리를 SAFE_DISTANCE로 맞춰버림
+    const push = (SAFE_DISTANCE - safeDist) + 25; // +여유
+    const ux = dx / safeDist;
+    const uy = dy / safeDist;
+
+    const targetCx = noCx + ux * push;
+    const targetCy = noCy + uy * push;
 
     const left = clamp(
-      nx - noRect.width/2 - stageRect.left,
+      targetCx - noRect.width / 2 - stageRect.left,
       PADDING,
       stageRect.width - noRect.width - PADDING
     );
 
     const top = clamp(
-      ny - noRect.height/2 - stageRect.top,
+      targetCy - noRect.height / 2 - stageRect.top,
       PADDING,
       stageRect.height - noRect.height - PADDING
     );
 
     noBtn.style.left = left + "px";
     noBtn.style.top  = top  + "px";
+    noBtn.style.transition = "left 0.05s linear, top 0.05s linear";
+    noBtn.style.transform = "translateX(0)"; // 혹시 남아있을 수 있는 translate 제거
   }
-
-  document.addEventListener("pointermove", (e) => {
-    repel(e.clientX, e.clientY);
-    updateYesShape(e.clientX, e.clientY);
-  }, { passive: true });
-
-  // 💖 예 버튼 클릭
-  yesBtn.addEventListener("click", () => {
-    alert("꺄아 💕 선택은 이미 정해져 있었어 😏");
-  });
-
-  /* ===========================
-     💗 예 버튼이 하트 모양으로 변신
-     =========================== */
-
-  const YES_DISTANCE = 130;
 
   function updateYesShape(px, py) {
     const r = yesBtn.getBoundingClientRect();
-    const cx = r.left + r.width/2;
-    const cy = r.top + r.height/2;
+    const cx = r.left + r.width / 2;
+    const cy = r.top  + r.height / 2;
     const d = Math.hypot(cx - px, cy - py);
 
-    if (d < YES_DISTANCE) {
-      yesBtn.classList.add("heart-mode");
-    } else {
-      yesBtn.classList.remove("heart-mode");
-    }
+    if (d < YES_DISTANCE) yesBtn.classList.add("heart-mode");
+    else yesBtn.classList.remove("heart-mode");
   }
 
-  // 💗 하트 눈
+  yesBtn.addEventListener("click", () => {
+    alert("꺄아>_< 최고! 💕");
+  });
+
+  #yes { transition: all 0.2s ease; }
+
+#yes.heart-mode{
+  width: 70px;
+  height: 70px;
+  padding: 0;
+  border-radius: 0;
+  transform: translateX(-50%) rotate(-45deg);
+  position: absolute;
+}
+
+#yes.heart-mode::before,
+#yes.heart-mode::after{
+  content: "";
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  background: var(--yes);
+  border-radius: 50%;
+}
+
+#yes.heart-mode::before{ top: -35px; left: 0; }
+#yes.heart-mode::after { top: 0; left: 35px; }
+
+
+  // 하트 눈 유지
   const HEARTS = ["💗","💖","💕","💓"];
   setInterval(() => {
     const h = document.createElement("div");
     h.className = "heart";
-    h.textContent = HEARTS[Math.floor(Math.random()*HEARTS.length)];
-    h.style.left = Math.random()*window.innerWidth + "px";
-    h.style.fontSize = 10 + Math.random()*8 + "px";
-    h.style.animationDuration = 5 + Math.random()*3 + "s";
-    h.style.setProperty("--drift", (Math.random()*80-40)+"px");
-    h.style.setProperty("--rot", (Math.random()*200-100)+"deg");
+    h.textContent = HEARTS[Math.floor(Math.random() * HEARTS.length)];
+    h.style.left = Math.random() * window.innerWidth + "px";
+    h.style.fontSize = 10 + Math.random() * 8 + "px";
+    h.style.animationDuration = 5 + Math.random() * 3 + "s";
+    h.style.setProperty("--drift", (Math.random() * 80 - 40) + "px");
+    h.style.setProperty("--rot", (Math.random() * 200 - 100) + "deg");
     document.body.appendChild(h);
-    setTimeout(()=>h.remove(),9000);
-  },240);
+    setTimeout(() => h.remove(), 9000);
+  }, 240);
+
+  // 시작!
+  requestAnimationFrame(tick);
 </script>
+
 
 
 
